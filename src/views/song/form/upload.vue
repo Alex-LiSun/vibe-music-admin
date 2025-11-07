@@ -10,6 +10,7 @@ const emit = defineEmits(["update:visible", "success"]);
 const fileList = ref([]);
 const isVisible = ref(props.visible);
 const audioUrl = ref(""); // 存储音频预览URL
+const duration = ref(""); // 音频时长，格式化后字符串
 
 watch(
   () => props.visible,
@@ -31,6 +32,19 @@ const handleChange = file => {
     URL.revokeObjectURL(audioUrl.value);
   }
   audioUrl.value = URL.createObjectURL(file.raw);
+  duration.value = ""; // 重置时长，等待新的元数据加载
+};
+
+const handleLoadedMetadata = (event: Event) => {
+  const audioElement = event.target as HTMLAudioElement;
+  const seconds = audioElement.duration;
+
+  if (Number.isFinite(seconds)) {
+    duration.value = seconds.toFixed(2);
+  } else {
+    duration.value = "";
+    message("音频时长解析失败", { type: "warning" });
+  }
 };
 
 const submitForm = async () => {
@@ -39,8 +53,14 @@ const submitForm = async () => {
     return;
   }
 
+  if (!duration.value) {
+    message("音频时长解析中，请稍候再提交", { type: "warning" });
+    return;
+  }
+
   const formData = new FormData();
   formData.append("audio", fileList.value[0]);
+  formData.append("duration", duration.value);
 
   try {
     const res = await updateSongAudio(props.songId, formData);
@@ -78,7 +98,13 @@ const submitForm = async () => {
         点击或拖拽上传 (仅支持.mp3格式)
       </div>
     </el-upload>
-    <audio v-if="audioUrl" :src="audioUrl" controls class="mt-3" />
+    <audio
+      v-if="audioUrl"
+      :src="audioUrl"
+      controls
+      class="mt-3"
+      @loadedmetadata="handleLoadedMetadata"
+    />
     <template #footer>
       <el-button @click="emit('update:visible', false)">取消</el-button>
       <el-button type="primary" @click="submitForm">提交</el-button>

@@ -222,7 +222,7 @@ export const updateSongCover = (id: number, data: object) => {
 };
 
 /** 歌曲管理-更新歌曲音频 */
-export const updateSongAudio = (id: number, data: object) => {
+export const updateSongAudio = (id: number, data: FormData) => {
   const userData = getToken();
   return http.request<Result>("patch", `/admin/updateSongAudio/${id}`, {
     headers: {
@@ -421,4 +421,3 @@ export const deleteBanners = (ids: Array<number>) => {
     data: ids
   });
 };
-
